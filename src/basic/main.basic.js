@@ -1,110 +1,26 @@
-import addButton, { attachAddButtonListener } from './components/addButton.js';
-import cartItemList, {
-  attachCartItemListListener,
-} from './components/cartItemList.js';
-import ProductListConstant from './constant/productList.constant.js';
-import lastSelectState from './lib/lastSelectState.js';
+import container from './components/container.js';
+import wrapper from './components/wrapper.js';
+import ProductListConstant from './constant/productList.constant';
+import luckySaleInterval from './utils/luckySaleInterval.js';
+import recommendSaleInterval from './utils/recommendSaleInterval.js';
 
 // 장바구니와 관련된 HTML 요소를 생성하고 초기화하는 함수
 function main() {
-  // HTML 요소 생성
   const rootElement = document.getElementById('app');
-  const containerElement = document.createElement('div');
-  const wrapElement = document.createElement('div');
-  const headingTextElement = document.createElement('h1');
+  const wrapElement = wrapper();
+  const containerElement = container();
 
-  // 장바구니 관련 요소
-  const cartTotalElement = document.createElement('div');
-  const selectElement = document.createElement('select');
-  const stockInfoTextElement = document.createElement('div');
-
-  cartTotalElement.id = 'cart-total';
-  selectElement.id = 'product-select';
-
-  stockInfoTextElement.id = 'stock-status';
-
-  // 클래스 및 스타일 설정
-  containerElement.className = 'bg-gray-100 p-8';
-  wrapElement.className =
-    'max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl p-8';
-  headingTextElement.className = 'text-2xl font-bold mb-4';
-  cartTotalElement.className = 'text-xl font-bold my-4';
-  selectElement.className = 'border rounded p-2 mr-2';
-  stockInfoTextElement.className = 'text-sm text-gray-500 mt-2';
-  headingTextElement.textContent = '장바구니';
-
-  // HTML 요소를 DOM에 추가
-  wrapElement.appendChild(headingTextElement);
-
-  const cartItemListElement = cartItemList();
-  attachCartItemListListener(cartItemListElement);
-  wrapElement.appendChild(cartItemListElement);
-
-  wrapElement.appendChild(cartTotalElement);
-  wrapElement.appendChild(selectElement);
-
-  const addButtonElement = addButton();
-  attachAddButtonListener(addButtonElement);
-  wrapElement.appendChild(addButtonElement);
-
-  wrapElement.appendChild(stockInfoTextElement);
   containerElement.appendChild(wrapElement);
   rootElement.appendChild(containerElement);
 
-  // 할인 이벤트 설정
-  setTimeout(() => {
-    setInterval(() => {
-      const luckyItem =
-        ProductListConstant[
-          Math.floor(Math.random() * ProductListConstant.length)
-        ];
-      if (Math.random() < 0.3 && luckyItem.quantity > 0) {
-        luckyItem.price = Math.round(luckyItem.price * 0.8);
-        alert(`번개세일! ${luckyItem.name}이(가) 20% 할인 중입니다!`);
-        updateSelOpts();
-      }
-    }, 30000);
-  }, Math.random() * 10000);
+  // 이벤트 alert
+  luckySaleInterval();
+  recommendSaleInterval();
 
-  // 추천 상품 이벤트 설정
-  // @TODO: lastSelectedItem을 전역 변수로 설정하여 사용
-  setTimeout(() => {
-    setInterval(() => {
-      const lastSelectedItem = lastSelectState().getState();
-      if (!lastSelectedItem) return;
-
-      const suggest = ProductListConstant.find(
-        (item) => item.id !== lastSelectedItem && item.quantity > 0
-      );
-
-      if (suggest) {
-        alert(`${suggest.name}은(는) 어떠세요? 지금 구매하시면 5% 추가 할인!`);
-        suggest.price = Math.round(suggest.price * 0.95);
-        updateSelOpts();
-      }
-    }, 60000);
-  }, Math.random() * 20000);
-
-  // 상품 선택 옵션 업데이트
-  updateSelOpts();
   // 장바구니 계산
   calcCart();
 }
 
-// 상품 선택 옵션을 업데이트하는 함수
-function updateSelOpts() {
-  const selectElement = document.getElementById('product-select');
-  selectElement.innerHTML = '';
-  ProductListConstant.forEach((item) => {
-    const optionElement = document.createElement('option');
-    optionElement.value = item.id;
-    optionElement.textContent = `${item.name} - ${item.price}원`;
-    optionElement.disabled = item.quantity === 0;
-    selectElement.appendChild(optionElement);
-  });
-}
-
-// 장바구니 계산 함수
 export function calcCart() {
   let totalPrice = 0;
   let cartItemsCount = 0;
@@ -155,14 +71,14 @@ export function calcCart() {
     discountPercentage = Math.max(discountPercentage, 0.1);
   }
 
-  const cartTotalElement = document.getElementById('cart-total');
-  cartTotalElement.textContent = '총액: ' + Math.round(totalPrice) + '원';
+  const totalPriceElement = document.getElementById('cart-total');
+  totalPriceElement.textContent = '총액: ' + Math.round(totalPrice) + '원';
 
   if (discountPercentage > 0) {
     const discountInfo = document.createElement('span');
     discountInfo.className = 'text-green-500 ml-2';
     discountInfo.textContent = `(${(discountPercentage * 100).toFixed(1)}% 할인 적용)`;
-    cartTotalElement.appendChild(discountInfo);
+    totalPriceElement.appendChild(discountInfo);
   }
 
   updateStockInfo();
@@ -187,7 +103,6 @@ const renderBonusPts = (totalPrice) => {
   pointTagElement.textContent = '(포인트: ' + bonusPoint + ')';
 };
 
-// 재고 정보 업데이트 함수
 function updateStockInfo() {
   let updatedStockInfoMessage = '';
   ProductListConstant.forEach((item) => {
