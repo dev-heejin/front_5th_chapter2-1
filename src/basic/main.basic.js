@@ -1,4 +1,5 @@
 import ProductListConstant from './constant/productList.constant.js';
+import lastSelectState from './lib/lastSelectState.js';
 
 // 장바구니와 관련된 HTML 요소를 생성하고 초기화하는 함수
 function main() {
@@ -45,21 +46,22 @@ function main() {
 
   // 상품 추가 버튼 클릭 이벤트 핸들러
 
-  addButtonElement.addEventListener('click', function () {
-    const selectElement = document.getElementById('product-select');
-    const selectedItem = selectElement.value;
+  addButtonElement.addEventListener('click', () => {
+    const selectedItem = document.getElementById('product-select').value;
     const itemToAdd = ProductListConstant.find(
       (product) => product.id === selectedItem
     );
 
     if (itemToAdd && itemToAdd.quantity > 0) {
-      const item = document.getElementById(itemToAdd.id);
-      if (item) {
-        const newQuantity =
-          parseInt(item.querySelector('span').textContent.split('x ')[1]) + 1;
-        if (newQuantity <= itemToAdd.quantity) {
-          item.querySelector('span').textContent =
-            itemToAdd.name + ' - ' + itemToAdd.price + '원 x ' + newQuantity;
+      const existingItem = document.getElementById(itemToAdd.id);
+
+      if (existingItem) {
+        const currentQuantity = parseInt(
+          existingItem.querySelector('span').textContent.split('x ')[1]
+        );
+        if (currentQuantity < itemToAdd.quantity) {
+          existingItem.querySelector('span').textContent =
+            `${itemToAdd.name} - ${itemToAdd.price}원 x ${currentQuantity + 1}`;
           itemToAdd.quantity--;
         } else {
           alert('재고가 부족합니다.');
@@ -69,23 +71,22 @@ function main() {
         newItemElement.id = itemToAdd.id;
         newItemElement.className = 'flex justify-between items-center mb-2';
         newItemElement.innerHTML = `
-            <span>${itemToAdd.name} - ${itemToAdd.price}원 x 1</span>
-            <div>
-              <button class="quantity-change bg-blue-500 text-white px-2 py-1 rounded mr-1" data-product-id="${itemToAdd.id}" data-change="-1">-</button>
-              <button class="quantity-change bg-blue-500 text-white px-2 py-1 rounded mr-1" data-product-id="${itemToAdd.id}" data-change="1">+</button>
-              <button class="remove-item bg-red-500 text-white px-2 py-1 rounded" data-product-id="${itemToAdd.id}">삭제</button>
-            </div>`;
+                <span>${itemToAdd.name} - ${itemToAdd.price}원 x 1</span>
+                <div>
+                  <button class="quantity-change bg-blue-500 text-white px-2 py-1 rounded mr-1" data-product-id="${itemToAdd.id}" data-change="-1">-</button>
+                  <button class="quantity-change bg-blue-500 text-white px-2 py-1 rounded mr-1" data-product-id="${itemToAdd.id}" data-change="1">+</button>
+                  <button class="remove-item bg-red-500 text-white px-2 py-1 rounded" data-product-id="${itemToAdd.id}">삭제</button>
+                </div>`;
         document.getElementById('cart-items').appendChild(newItemElement);
         itemToAdd.quantity--;
       }
-      calcCart();
 
-      return selectedItem;
+      calcCart();
+      lastSelectState().setState(selectedItem);
     }
   });
-
   // 장바구니 아이템 클릭 이벤트 핸들러
-  cartItemListElement.addEventListener('click', function (event) {
+  cartItemListElement.addEventListener('click', (event) => {
     const target = event.target;
     if (
       target.classList.contains('quantity-change') ||
@@ -96,7 +97,6 @@ function main() {
       const selectedProduct = ProductListConstant.find(
         (p) => p.id === productId
       );
-
       const quantity = parseInt(
         productElement.querySelector('span').textContent.split('x ')[1]
       );
@@ -104,6 +104,7 @@ function main() {
       if (target.classList.contains('quantity-change')) {
         const quantityChange = parseInt(target.dataset.change);
         const newQuantity = quantity + quantityChange;
+
         if (
           newQuantity > 0 &&
           newQuantity <= selectedProduct.quantity + quantity
@@ -117,7 +118,7 @@ function main() {
         } else {
           alert('재고가 부족합니다.');
         }
-      } else if (target.classList.contains('remove-item')) {
+      } else {
         selectedProduct.quantity += quantity;
         productElement.remove();
       }
@@ -144,7 +145,7 @@ function main() {
   // @TODO: lastSelectedItem을 전역 변수로 설정하여 사용
   setTimeout(() => {
     setInterval(() => {
-      const lastSelectedItem = null;
+      const lastSelectedItem = lastSelectState().getState();
       if (!lastSelectedItem) return;
 
       const suggest = ProductListConstant.find(
