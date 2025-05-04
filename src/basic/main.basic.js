@@ -1,3 +1,4 @@
+import addButton, { attachAddButtonListener } from './components/addButton.js';
 import ProductListConstant from './constant/productList.constant.js';
 import lastSelectState from './lib/lastSelectState.js';
 
@@ -13,13 +14,12 @@ function main() {
   const cartItemListElement = document.createElement('div');
   const cartTotalElement = document.createElement('div');
   const selectElement = document.createElement('select');
-  const addButtonElement = document.createElement('button');
   const stockInfoTextElement = document.createElement('div');
 
   cartItemListElement.id = 'cart-items';
   cartTotalElement.id = 'cart-total';
   selectElement.id = 'product-select';
-  addButtonElement.id = 'add-to-cart';
+
   stockInfoTextElement.id = 'stock-status';
 
   // 클래스 및 스타일 설정
@@ -29,62 +29,23 @@ function main() {
   headingTextElement.className = 'text-2xl font-bold mb-4';
   cartTotalElement.className = 'text-xl font-bold my-4';
   selectElement.className = 'border rounded p-2 mr-2';
-  addButtonElement.className = 'bg-blue-500 text-white px-4 py-2 rounded';
   stockInfoTextElement.className = 'text-sm text-gray-500 mt-2';
   headingTextElement.textContent = '장바구니';
-  addButtonElement.textContent = '추가';
 
   // HTML 요소를 DOM에 추가
   wrapElement.appendChild(headingTextElement);
   wrapElement.appendChild(cartItemListElement);
   wrapElement.appendChild(cartTotalElement);
   wrapElement.appendChild(selectElement);
+
+  const addButtonElement = addButton();
+  attachAddButtonListener(addButtonElement);
   wrapElement.appendChild(addButtonElement);
+
   wrapElement.appendChild(stockInfoTextElement);
   containerElement.appendChild(wrapElement);
   rootElement.appendChild(containerElement);
 
-  // 상품 추가 버튼 클릭 이벤트 핸들러
-
-  addButtonElement.addEventListener('click', () => {
-    const selectedItem = document.getElementById('product-select').value;
-    const itemToAdd = ProductListConstant.find(
-      (product) => product.id === selectedItem
-    );
-
-    if (itemToAdd && itemToAdd.quantity > 0) {
-      const existingItem = document.getElementById(itemToAdd.id);
-
-      if (existingItem) {
-        const currentQuantity = parseInt(
-          existingItem.querySelector('span').textContent.split('x ')[1]
-        );
-        if (currentQuantity < itemToAdd.quantity) {
-          existingItem.querySelector('span').textContent =
-            `${itemToAdd.name} - ${itemToAdd.price}원 x ${currentQuantity + 1}`;
-          itemToAdd.quantity--;
-        } else {
-          alert('재고가 부족합니다.');
-        }
-      } else {
-        const newItemElement = document.createElement('div');
-        newItemElement.id = itemToAdd.id;
-        newItemElement.className = 'flex justify-between items-center mb-2';
-        newItemElement.innerHTML = `
-                <span>${itemToAdd.name} - ${itemToAdd.price}원 x 1</span>
-                <div>
-                  <button class="quantity-change bg-blue-500 text-white px-2 py-1 rounded mr-1" data-product-id="${itemToAdd.id}" data-change="-1">-</button>
-                  <button class="quantity-change bg-blue-500 text-white px-2 py-1 rounded mr-1" data-product-id="${itemToAdd.id}" data-change="1">+</button>
-                  <button class="remove-item bg-red-500 text-white px-2 py-1 rounded" data-product-id="${itemToAdd.id}">삭제</button>
-                </div>`;
-        document.getElementById('cart-items').appendChild(newItemElement);
-        itemToAdd.quantity--;
-      }
-
-      calcCart();
-      lastSelectState().setState(selectedItem);
-    }
-  });
   // 장바구니 아이템 클릭 이벤트 핸들러
   cartItemListElement.addEventListener('click', (event) => {
     const target = event.target;
@@ -180,7 +141,7 @@ function updateSelOpts() {
 }
 
 // 장바구니 계산 함수
-function calcCart() {
+export function calcCart() {
   let totalPrice = 0;
   let cartItemsCount = 0;
   let subTotalPrice = 0;
