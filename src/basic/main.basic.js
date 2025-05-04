@@ -1,4 +1,7 @@
 import addButton, { attachAddButtonListener } from './components/addButton.js';
+import cartItemList, {
+  attachCartItemListListener,
+} from './components/cartItemList.js';
 import ProductListConstant from './constant/productList.constant.js';
 import lastSelectState from './lib/lastSelectState.js';
 
@@ -11,12 +14,10 @@ function main() {
   const headingTextElement = document.createElement('h1');
 
   // 장바구니 관련 요소
-  const cartItemListElement = document.createElement('div');
   const cartTotalElement = document.createElement('div');
   const selectElement = document.createElement('select');
   const stockInfoTextElement = document.createElement('div');
 
-  cartItemListElement.id = 'cart-items';
   cartTotalElement.id = 'cart-total';
   selectElement.id = 'product-select';
 
@@ -34,7 +35,11 @@ function main() {
 
   // HTML 요소를 DOM에 추가
   wrapElement.appendChild(headingTextElement);
+
+  const cartItemListElement = cartItemList();
+  attachCartItemListListener(cartItemListElement);
   wrapElement.appendChild(cartItemListElement);
+
   wrapElement.appendChild(cartTotalElement);
   wrapElement.appendChild(selectElement);
 
@@ -45,47 +50,6 @@ function main() {
   wrapElement.appendChild(stockInfoTextElement);
   containerElement.appendChild(wrapElement);
   rootElement.appendChild(containerElement);
-
-  // 장바구니 아이템 클릭 이벤트 핸들러
-  cartItemListElement.addEventListener('click', (event) => {
-    const target = event.target;
-    if (
-      target.classList.contains('quantity-change') ||
-      target.classList.contains('remove-item')
-    ) {
-      const productId = target.dataset.productId;
-      const productElement = document.getElementById(productId);
-      const selectedProduct = ProductListConstant.find(
-        (p) => p.id === productId
-      );
-      const quantity = parseInt(
-        productElement.querySelector('span').textContent.split('x ')[1]
-      );
-
-      if (target.classList.contains('quantity-change')) {
-        const quantityChange = parseInt(target.dataset.change);
-        const newQuantity = quantity + quantityChange;
-
-        if (
-          newQuantity > 0 &&
-          newQuantity <= selectedProduct.quantity + quantity
-        ) {
-          productElement.querySelector('span').textContent =
-            `${productElement.querySelector('span').textContent.split('x ')[0]}x ${newQuantity}`;
-          selectedProduct.quantity -= quantityChange;
-        } else if (newQuantity <= 0) {
-          productElement.remove();
-          selectedProduct.quantity -= quantityChange;
-        } else {
-          alert('재고가 부족합니다.');
-        }
-      } else {
-        selectedProduct.quantity += quantity;
-        productElement.remove();
-      }
-      calcCart();
-    }
-  });
 
   // 할인 이벤트 설정
   setTimeout(() => {
